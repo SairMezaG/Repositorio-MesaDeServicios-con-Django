@@ -240,42 +240,52 @@ def listarCasosAsignadosTecnico(request):
 def solucionarCaso(request):
     
     if request.user.is_authenticated:
-        procedimiento = request.POST["txtProcedimiento"]
-        tipoProc = int(request.POST["cbTipoProcedimiento"])
-        TipoProcedimiento = TipoProcedimiento.objets.get (pk=tipoProc)
-        tipoSolucion = request.POST["cbTipoSolucion"]
-        idCaso = int(request.POST[idCaso])
-        caso = Caso.objects.get(pk=idCaso)
-        solucionCaso = SolucionCaso(solCaso= caso, solProcedimiento = procedimiento, solTipoSolucion = tipoSolucion) 
-        solucionCaso.save() 
-        
-        if(tipoSolucion == "Definitiva"):
-            caso.casEstado = "Finalizada"
-            caso.save()
+        try:
             
-        SolucionCasoTipoProcedimientos = SolucionCasoTipoProcedimientos(
-            solSolucionCaso = solucionCaso,
-            solTipoProcedimiento = TipoProcedimiento
-        )
-        
-        
-        
-        # enviar el correo al empleado que realizó la solicitud
-        asunto = 'Registro Solicitud - Mesa de Servicio'
-        mensajeCorreo = f'Cordial saludo, <b>{userEmpleado.first_name} {userEmpleado.last_name}</b>, nos permitimos \
-                informarle que se ha dado solucion con el número de caso \
-                <b>{Caso.casCodigo}</b>. <br><br> Se solicita se atienda de manera oportuna, \
-                según los acuerdos de solución establecidos para la Mesa de Servicios del CTPI-CAUCA.\
-                <br><br>Lo invitamos a ingresar al sistema para gestionar sus casos asignados en la siguiente url:\
-                http://mesadeservicioctpicauca.sena.edu.co.'
-            # crear el hilo para el envío del correo
-        thread = threading.Thread(
-                target=enviarCorreo, args=(asunto, mensajeCorreo, [userEmpleado.email]))
-            # ejecutar el hilo
-        thread.start()
-        mensaje='Caso asignado'
+            if transaction.atomic():
+                procedimiento = request.POST["txtProcedimiento"]
+                tipoProc = int(request.POST["cbTipoProcedimiento"])
+                TipoProcedimiento = TipoProcedimiento.objets.get (pk=tipoProc)
+                tipoSolucion = request.POST["cbTipoSolucion"]
+                idCaso = int(request.POST[idCaso])
+                caso = Caso.objects.get(pk=idCaso)
+                solucionCaso = SolucionCaso(solCaso= caso, solProcedimiento = procedimiento, solTipoSolucion = tipoSolucion) 
+                solucionCaso.save() 
+                
+                if(tipoSolucion == "Definitiva"):
+                    caso.casEstado = "Finalizada"
+                    caso.save()
+                    
+                SolucionCasoTipoProcedimientos = SolucionCasoTipoProcedimientos(
+                    solSolucionCaso = solucionCaso,
+                    solTipoProcedimiento = TipoProcedimiento
+                )
+                SolucionCasoTipoProcedimientos.save()
+                
+                solicitud = caso.casSolicitud
+                userEmpleado = solicitud.solUsuario
+                asunto = "Solucion Caso CTPI-Cauca"
+                mensajeCorreo = f'Cordial saludo, <b>{userEmpleado.first_name} {userEmpleado.last_name}</b>, nos permitimos \
+                        informarle que se ha dado solucion de tipo {tipoSolucion} al caso identificado con codigo: \
+                        <b>{Caso.casCodigo}</b>. <br><br> Lo invitamos a revisar el equipo y verificar la solucion, 
+                        
+                        <br><br>Para consultar en detalle la solucion, ingresar al sistema para verificar las solicitudes\
+                        reportadas en la url:
+                        http://mesadeservicioctpicauca.sena.edu.co.'
+                    # crear el hilo para el envío del correo
+                thread = threading.Thread(
+                        target=enviarCorreo, args=(asunto, mensajeCorreo, [userEmpleado.email]))
+                    # ejecutar el hilo
+                thread.start()
+                mensaje='Solucion Caso'
+                
+        except Error as error:
+            transaction.rollback
+            mensaje = str(error) 
             
-        
+        retorno = {"mensaje": mensaje} 
+        return redirect("/listarCasosAsignados/")          
+                    
     else:
         mensaje="debes iniciar sesión"
         return render(request, "frmIniciarSesion.html",{"mensaje":mensaje})
