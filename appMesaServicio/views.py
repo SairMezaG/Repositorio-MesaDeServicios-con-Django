@@ -148,10 +148,6 @@ def enviarCorreo(asunto=None, mensaje=None, destinatario=None, archivo=None):
         print(error)
 
 
-def salir(request):
-    auth.logout(request)
-    return render(request, "frmIniciarSesion.html",
-                  {"mensaje": "Ha cerrado la sesión"})
 
 
 # //////////////////////////////
@@ -241,4 +237,56 @@ def listarCasosAsignadosTecnico(request):
     
     
     
+def solucionarCaso(request):
+    
+    if request.user.is_authenticated:
+        procedimiento = request.POST["txtProcedimiento"]
+        tipoProc = int(request.POST["cbTipoProcedimiento"])
+        TipoProcedimiento = TipoProcedimiento.objets.get (pk=tipoProc)
+        tipoSolucion = request.POST["cbTipoSolucion"]
+        idCaso = int(request.POST[idCaso])
+        caso = Caso.objects.get(pk=idCaso)
+        solucionCaso = SolucionCaso(solCaso= caso, solProcedimiento = procedimiento, solTipoSolucion = tipoSolucion) 
+        solucionCaso.save() 
+        
+        if(tipoSolucion == "Definitiva"):
+            caso.casEstado = "Finalizada"
+            caso.save()
+            
+        SolucionCasoTipoProcedimientos = SolucionCasoTipoProcedimientos(
+            solSolucionCaso = solucionCaso,
+            solTipoProcedimiento = TipoProcedimiento
+        )
+        
+        
+        
+        # enviar el correo al empleado que realizó la solicitud
+        asunto = 'Registro Solicitud - Mesa de Servicio'
+        mensajeCorreo = f'Cordial saludo, <b>{userEmpleado.first_name} {userEmpleado.last_name}</b>, nos permitimos \
+                informarle que se ha dado solucion con el número de caso \
+                <b>{Caso.casCodigo}</b>. <br><br> Se solicita se atienda de manera oportuna, \
+                según los acuerdos de solución establecidos para la Mesa de Servicios del CTPI-CAUCA.\
+                <br><br>Lo invitamos a ingresar al sistema para gestionar sus casos asignados en la siguiente url:\
+                http://mesadeservicioctpicauca.sena.edu.co.'
+            # crear el hilo para el envío del correo
+        thread = threading.Thread(
+                target=enviarCorreo, args=(asunto, mensajeCorreo, [userEmpleado.email]))
+            # ejecutar el hilo
+        thread.start()
+        mensaje='Caso asignado'
+            
+        
+    else:
+        mensaje="debes iniciar sesión"
+        return render(request, "frmIniciarSesion.html",{"mensaje":mensaje})
+    
+    
+    
+    
+    
+    
+def salir(request):
+    auth.logout(request)
+    return render(request, "frmIniciarSesion.html",
+                  {"mensaje": "Ha cerrado la sesión"})
     
