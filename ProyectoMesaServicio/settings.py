@@ -150,12 +150,12 @@ MEDIA_URL = '/media/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# recaptcha
-GOOGLE_RECAPTCHA_SECRET_KEY = '6Lf2r3coAAAAAIs4RnLRtXZRVnfG8KTazeauAr0v'
+# falta hacer el recaptcha
+
 
 # variables configuración correo
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'onix7kingdom@gmail.com'
-EMAIL_HOST_PASSWORD = 'vytadmeuvvvovigz'
+EMAIL_HOST_USER = 'z.meza.gm@gmail.com'
+EMAIL_HOST_PASSWORD = 'xhushtfldlmouzti'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
