@@ -70,11 +70,11 @@
 
       <!-- Modal body -->
       <div class="modal-body">
-        <form action="/asignarTecnicoCaso/" method="post">
+        <form action="/solucionarCaso/" method="post">
             {% csrf_token %}
             <div class="mb-3">
-                <label for="descripcion" class="fw-bold">Descripción:</label>
-                <textarea name="descripcion" rows="5" cols="10" id="descripcion" class="form-control"
+                <label for="procedimiento" class="fw-bold">Procedimiento:</label>
+                <textarea name="procedimiento" rows="5" cols="10" id="procedimiento" class="form-control"
                     placeholder="Haga una descripción de lo que le pasa al equipo" required></textarea>
                 </textarea>
             </div>
@@ -103,7 +103,7 @@
             <div class="modal-footer">
         
                 <button type="submit" class="btn btn-success" data-bs-dismiss="modal">
-                  Enviar
+                  Registrar
                 </button>
                 <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
                   cancelar
