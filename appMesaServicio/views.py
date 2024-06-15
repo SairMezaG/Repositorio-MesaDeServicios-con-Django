@@ -97,7 +97,7 @@ def registrarSolicitud(request):
             # obtener el número de solicitudes hechas por año actual
             consecutivoCaso = Solicitud.objects.filter(
                 fechaHoraCreacion__year=year).count()
-            # ajustar el consecutivon con ceros a las izquierda
+            # ajustar el consecutivo con ceros a las izquierda
             consecutivoCaso = str(consecutivoCaso).rjust(5, '0')
             # crear el código del caso formato REQ-AÑOVIGENCIA-CONSECUTIVO
             codigoCaso = f"REQ-{year}-{consecutivoCaso}"
