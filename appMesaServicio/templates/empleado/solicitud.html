@@ -10,17 +10,17 @@
 <form action="/registrarSolicitud/" method="post" class="w-75 was-validated" style="margin: 0 auto">
     {% csrf_token %}
     <div class="mb-3">
-        <label for="descripcion" class="fw-bold">Descripción:</label>
-        <textarea name="descripcion" rows="5" cols="10" id="descripcion" class="form-control"
+        <label for="txtDescripcion" class="fw-bold">Descripción:</label>
+        <textarea name="txtDescripcion" rows="5" cols="10" id="" class="form-control"
             placeholder="Haga una descripción de lo que le pasa al equipo" required></textarea>
         </textarea>
     </div>
     <div class="mb-3">
-        <label for="selectOficinaAmbiente" class="fw-bold">Oficina-Ambiente:</label>
-        <select name="selectOficinaAmbiente" id="selectOficinaAmbiente" class="form-select" required>
+        <label for="cbOficinaAmbiente" class="fw-bold">Oficina-Ambiente:</label>
+        <select name="cbOficinaAmbiente" id="" class="form-select" required>
             <option value="">Seleccione</option>
-            {%for oficina in oficinasAmbientes %}
-            <option value="{{oficina.id}}">{{oficina.ofiNombre}}</option>
+            {%for ofi in oficinasAmbientes %}
+            <option value="{{ofi.id}}">{{ofi.ofiNombre}}</option>
             {%endfor%}
         </select>
     </div>
@@ -29,7 +29,11 @@
         <button type="reset" class="btn btn-secondary">Cancelar</button>
     </div>
     <div>
-        {{mensaje}}
+        {% if mensaje %}
+        <script>
+            swal.fire("Registro de Solicitudes", '{{mensaje}}', 'info')
+        </script>
+        {%endif%}
     </div>
 </form>
 
