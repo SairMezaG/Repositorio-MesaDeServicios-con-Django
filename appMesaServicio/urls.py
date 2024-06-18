@@ -14,8 +14,12 @@ urlpatterns = [
     path('registrarSolicitud/', views.registrarSolicitud),
     path('listarCasosParaAsignar/', views.listarCasos),
     path('asignarTecnicoCaso/', views.asignarTecnicoCaso),
-    path('listarCasosAsignadosTecnicos/', views.listarCasosAsignadosTecnico),
+    path('listarCasosAsignados/', views.listarCasosAsignadosTecnico),
     path('solucionarCaso/', views.solucionarCaso),
+    path('vistaGestionarUsuarios/', views.vistaGestionarUsuarios),
+    path('vistaRegistrarUsuario/', views.vistaRegistrarUsuario),
+    path('registrarUsuario/', views.registrarUsuario),
+    path('recuperarClave/', views.recuperarClave),
     path('salir/', views.salir),
 
 ]

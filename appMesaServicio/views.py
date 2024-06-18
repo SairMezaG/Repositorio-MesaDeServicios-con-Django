@@ -12,6 +12,12 @@ from django.template.loader import get_template
 import threading
 from smtplib import SMTPException
 from django.http import JsonResponse
+# para la constraseña
+import random
+import string
+# importar el modelo Group - Roles
+from django.contrib.auth.models import Group
+
 
 # Create your views here.
 
@@ -51,8 +57,8 @@ def inicioEmpleado(request):
 
 
 def login(request):
-    username = request.POST["usuario"]
-    password = request.POST["contraseña"]
+    username = request.POST["txtUser"]
+    password = request.POST["txtPassword"]
     user = authenticate(username=username, password=password)
     if user is not None:
         # registrar la variable de sesión
@@ -82,53 +88,68 @@ def vistaSolicitud(request):
 
 
 def registrarSolicitud(request):
-    try:
-        with transaction.atomic():
-            user = request.user
-            descripcion = request.POST['descripcion']
-            idOficinaAmbiente = int(request.POST['selectOficinaAmbiente'])
-            oficinaAmbiente = OficinaAmbiente.objects.get(pk=idOficinaAmbiente)
-            solicitud = Solicitud(solUsuario=user, solDescripcion=descripcion,
-                                  solOficinaAmbiente=oficinaAmbiente)
-            solicitud.save()
-            # obtener año para en el consecutivo agregar el año.
-            fecha = datetime.now()
-            year = fecha.year
-            # obtener el número de solicitudes hechas por año actual
-            consecutivoCaso = Solicitud.objects.filter(
-                fechaHoraCreacion__year=year).count()
-            # ajustar el consecutivo con ceros a las izquierda
-            consecutivoCaso = str(consecutivoCaso).rjust(5, '0')
-            # crear el código del caso formato REQ-AÑOVIGENCIA-CONSECUTIVO
-            codigoCaso = f"REQ-{year}-{consecutivoCaso}"
-            # consultar el usuario tipo Administrador para asignarlo al caso
-            userCaso = User.objects.filter(
-                groups__name__in=['administrador']).first()
-            # crear el caso
-            caso = Caso(casSolicitud=solicitud,
-                        casCodigo=codigoCaso, casUsuario=userCaso)
-            caso.save()
-            # enviar el correo al empleado
-            asunto = 'Registro Solicitud - Mesa de Servicio'
-            mensajeCorreo = f'Cordial saludo, <b>{user.first_name} {user.last_name}</b>, nos permitimos \
-                informarle que su solicitud fue registrada en nuestro sistema con el número de caso \
-                <b>{codigoCaso}</b>. <br><br> Su caso será gestionado en el menor tiempo posible, \
-                según los acuerdos de solución establecidos para la Mesa de Servicios del CTPI-CAUCA.\
-                <br><br>Lo invitamos a ingresar a nuestro sistema en la siguiente url:\
-                http://mesadeservicioctpicauca.sena.edu.co.'
-            # crear el hilo para el envío del correo
-            thread = threading.Thread(
-                target=enviarCorreo, args=(asunto, mensajeCorreo, [user.email]))
-            # ejecutar el hilo
-            thread.start()
-            mensaje = "Se ha registrado su solicitud de manera exitosa"
-    except Error as error:
-        transaction.rollback()
-        mensaje = f"{error}"
+    """_summary_
+        Función que realiza el proceso de registrar
+        la solicitud por parte del empleado
+    Args:
+        request (_type_): objeto con la descripción, la
+        oficina y el empleado que hace la solicitud
 
-    oficinaAmbientes = OficinaAmbiente.objects.all()
-    retorno = {"mensaje": mensaje, "oficinasAmbientes": oficinaAmbientes}
-    return render(request, "empleado/solicitud.html", retorno)
+    Returns:
+        _type_: mensaje de registro o no de la solicitud
+    """
+    if request.user.is_authenticated:
+        try:
+            with transaction.atomic():
+                user = request.user
+                descripcion = request.POST['txtDescripcion']
+                idOficinaAmbiente = int(request.POST['cbOficinaAmbiente'])
+                oficinaAmbiente = OficinaAmbiente.objects.get(
+                    pk=idOficinaAmbiente)
+                solicitud = Solicitud(solUsuario=user, solDescripcion=descripcion,
+                                      solOficinaAmbiente=oficinaAmbiente)
+                solicitud.save()
+                # obtener año para en el consecutivo agregar el año.
+                fecha = datetime.now()
+                year = fecha.year
+                # obtener el número de solicitudes hechas por año actual
+                consecutivoCaso = Solicitud.objects.filter(
+                    fechaHoraCreacion__year=year).count()
+                # ajustar el consecutivon con ceros a las izquierda
+                consecutivoCaso = str(consecutivoCaso).rjust(5, '0')
+                # crear el código del caso formato REQ-AÑOVIGENCIA-CONSECUTIVO
+                codigoCaso = f"REQ-{year}-{consecutivoCaso}"
+                # consultar el usuario tipo Administrador para asignarlo al caso
+                userCaso = User.objects.filter(
+                    groups__name__in=['Administrador']).first()
+                # crear el caso
+                caso = Caso(casSolicitud=solicitud,
+                            casCodigo=codigoCaso, casUsuario=userCaso)
+                caso.save()
+                # enviar el correo al empleado
+                asunto = 'Registro Solicitud - Mesa de Servicio - CTPI-CAUCA'
+                mensajeCorreo = f'Cordial saludo, <b>{user.first_name} {user.last_name}</b>, nos permitimos \
+                    informarle que su solicitud fue registrada en nuestro sistema con el número de caso \
+                    <b>{codigoCaso}</b>. <br><br> Su caso será gestionado en el menor tiempo posible, \
+                    según los acuerdos de solución establecidos para la Mesa de Servicios del CTPI-CAUCA.\
+                    <br><br>Lo invitamos a ingresar a nuestro sistema en la siguiente url:\
+                    http://mesadeservicioctpicauca.sena.edu.co.'
+                # crear el hilo para el envío del correo
+                thread = threading.Thread(
+                    target=enviarCorreo, args=(asunto, mensajeCorreo, [user.email]))
+                # ejecutar el hilo
+                thread.start()
+                mensaje = "Se ha registrado su solicitud de manera exitosa"
+        except Error as error:
+            transaction.rollback()
+            mensaje = f"{error}"
+
+        oficinaAmbientes = OficinaAmbiente.objects.all()
+        retorno = {"mensaje": mensaje, "oficinasAmbientes": oficinaAmbientes}
+        return render(request, "empleado/solicitud.html", retorno)
+    else:
+        mensaje = "Debe primero iniciar sesión"
+        return render(request, "frmIniciarSesion.html", {"mensaje": mensaje})
 
 
 def enviarCorreo(asunto=None, mensaje=None, destinatario=None, archivo=None):
@@ -148,153 +169,278 @@ def enviarCorreo(asunto=None, mensaje=None, destinatario=None, archivo=None):
         print(error)
 
 
-
-
-# //////////////////////////////
-
 def listarCasos(request):
-    try:
-        mensaje=""
-        listaCasos= Caso.objects.all()
-        tecnicos=User.objects.filter(groups__name__in=['tecnico'])
-        
-        
-    except Error as error:
-        mensaje=str(error)
-    retorno={'listaCasos':listaCasos,'tecnicos':tecnicos, 'mensaje':mensaje}
-    return render(request,'administrador/listarCaso.html', retorno)
+    """_summary_
+        obtiene los casos en estado solicitada
+        y los empleados técnicos para asignar a
+        los casos.
+    Args:
+        request (_type_): _description_
+
+    Returns:
+        _type_: Lista de los casos y de los empleados técnicos
+    """
+    if request.user.is_authenticated:
+        try:
+            mensaje = ""
+            fecha = datetime.now()
+            year = fecha.year
+            listaCasos = Caso.objects.filter(
+                casSolicitud__fechaHoraCreacion__year=year, casEstado='Solicitada')
+            tecnicos = User.objects.filter(groups__name__in=['Tecnico'])
+        except Error as error:
+            mensaje = str(error)
+        retorno = {"listaCasos": listaCasos,
+                   "tecnicos": tecnicos, "mensaje": mensaje}
+        return render(request, "administrador/listarCasos.html", retorno)
+    else:
+        mensaje = "Debe primero iniciar sesión"
+        return render(request, "frmIniciarSesion.html", {"mensaje": mensaje})
 
 
 def listarEmpleadosTecnicos(request):
-    try:
-        # consulta para obtener todos los tecnicos
-        tecnicos=User.objects.filter(groups__name__in=['tecnico'])
-        mensaje=''
-    except Error as error:
-        mensaje=str(error)
-    retorno={'tecnicos':tecnicos, 'mensaje':mensaje}
-    return JsonResponse(retorno)
-
-
+    if request.user.is_authenticated:
+        try:
+            mensaje = ""
+            # consulta para obtener todos los empleados con rol Tecnico
+            tecnicos = User.objects.filter(groups__name__in=['Tecnico'])
+        except Error as error:
+            mensaje = str(error)
+        retorno = {"tecnicos": tecnicos, 'mensaje': mensaje}
+        return JsonResponse(retorno)
+    else:
+        mensaje = "Debe primero iniciar sesión"
+        return render(request, "frmIniciarSesion.html", {"mensaje": mensaje})
 
 
 def asignarTecnicoCaso(request):
     if request.user.is_authenticated:
         try:
-            idTecnico=int(request.POST['selectTecnicoCaso'])
-            userTecnico=User.objects.get(pk=idTecnico)
-            idCaso=int(request.POST['idCaso'])
-            caso=Caso.objects.get(pk=idCaso)
-            caso.casUsuario= userTecnico
-            caso.casEstado= " En proceso"
+            idTecnico = int(request.POST['cbTecnico'])
+            userTecnico = User.objects.get(pk=idTecnico)
+            idCaso = int(request.POST['idCaso'])
+            caso = Caso.objects.get(pk=idCaso)
+            caso.casUsuario = userTecnico
+            caso.casEstado = "En Proceso"
             caso.save()
-            
-            # enviar el correo al tecnico
-            asunto = 'Registro Solicitud - Mesa de Servicio'
+            # enviar correo al técnico
+            asunto = 'Asignación Caso - Mesa de Servicio - CTPI-CAUCA'
             mensajeCorreo = f'Cordial saludo, <b>{userTecnico.first_name} {userTecnico.last_name}</b>, nos permitimos \
-                informarle que se le ha asignado un caso para dar solucion en el sistema con el número de caso \
-                <b>{Caso.casCodigo}</b>. <br><br> Se solicita se atienda de manera oportuna, \
-                según los acuerdos de solución establecidos para la Mesa de Servicios del CTPI-CAUCA.\
-                <br><br>Lo invitamos a ingresar al sistema para gestionar sus casos asignados en la siguiente url:\
-                http://mesadeservicioctpicauca.sena.edu.co.'
+                    informarle que se le ha asignado un caso para dar solución. Código de Caso:  \
+                    <b>{caso.casCodigo}</b>. <br><br> Se solicita se atienda de manera oportuna \
+                    según los acuerdos de solución establecidos para la Mesa de Servicios del CTPI-CAUCA.\
+                    <br><br>Lo invitamos a ingresar al sistema para gestionar sus casos asignados en la siguiente url:\
+                    http://mesadeservicioctpicauca.sena.edu.co.'
             # crear el hilo para el envío del correo
             thread = threading.Thread(
                 target=enviarCorreo, args=(asunto, mensajeCorreo, [userTecnico.email]))
             # ejecutar el hilo
             thread.start()
-            mensaje='Caso asignado'
-            
-            
-            
+            mensaje = "Caso asignado"
         except Error as error:
-            mensaje=str(error)
-            
+            mensaje = str(error)
         return redirect('/listarCasosParaAsignar/')
     else:
-        mensaje="Debe iniciar sesión Primero"
-        
-        
-    
-# ///////////////////////////
+        mensaje = "Debe primero iniciar sesión"
+        return render(request, "frmIniciarSesion.html", {"mensaje": mensaje})
+
+
 def listarCasosAsignadosTecnico(request):
     if request.user.is_authenticated:
         try:
-            ListaCasos=Caso.objects.filter(casEstado=" En Proceso",
-                                        casUsuario=request.user)
-            TipoProcedimientos=TipoProcedimiento.objects.all()
-            
-            mensaje="lista de casos asignados"
+            listaCasos = Caso.objects.filter(
+                casEstado='En Proceso', casUsuario=request.user)
+            listaTipoProcedimiento = TipoProcedimiento.objects.all().values()
+            mensaje = "Listado de casos asignados"
         except Error as error:
-            mensaje=str(error)
-           
-        retorno={"mensaje":mensaje, "ListaCasos":ListaCasos,
-                "tipoSolucion":tipoSolucion, "TipoProcedimientos":TipoProcedimientos}
-        return render(request,'tecnico/listarCasosAsignados.html',retorno)
+            mensaje = str(error)
+
+        retorno = {"mensaje": mensaje, "listaCasos": listaCasos,
+                   "listaTipoSolucion": tipoSolucion,
+                   "listaTipoProcedimiento": listaTipoProcedimiento
+                   }
+        return render(request, "tecnico/listarCasosAsignados.html", retorno)
     else:
-        mensaje="debes iniciar sesión"
-        return render(request, "frmIniciarSesion.html",{"mensaje":mensaje})     
-    
-    
-    
-# //////////////////////////
+        mensaje = "Debe iniciar sesión"
+        return render(request, "frmIniciarSesion.html", {"mensaje": mensaje})
+
 
 def solucionarCaso(request):
     if request.user.is_authenticated:
         try:
             if transaction.atomic():
-                
-                procedimiento= request.POST['procedimiento']
-                
-                tipoprocedimientoId=int(request.POST['selectTipoProcedimientos'])
-                tipoProcedimiento=TipoProcedimiento.objects.get(pk=tipoprocedimientoId)
-                
-                idCaso=int(request.POST['idCaso'])
-                caso=Caso.objects.get(pk=idCaso)
-                
-                tipoSolucion= request.POST['selectTipoSolucion']
-                
-                solucionCaso=SolucionCaso(solCaso=caso, solProcedimiento= procedimiento, solTipoSolucion=tipoSolucion)
+                procedimiento = request.POST['txtProcedimiento']
+                tipoProc = int(request.POST['cbTipoProcedimiento'])
+                tipoProcedimiento = TipoProcedimiento.objects.get(pk=tipoProc)
+                tipoSolucion = request.POST['cbTipoSolucion']
+                idCaso = int(request.POST['idCaso'])
+                caso = Caso.objects.get(pk=idCaso)
+                solucionCaso = SolucionCaso(solCaso=caso,
+                                            solProcedimiento=procedimiento,
+                                            solTipoSolucion=tipoSolucion)
                 solucionCaso.save()
-                
-                if(tipoSolucion=="Definitiva"):
-                    caso.casEstado="Finalizado"
+                # actualizar estado de caso dependiendo del tipo de la solución
+                if (tipoSolucion == "Definitiva"):
+                    caso.casEstado = "Finalizada"
                     caso.save()
-                    
-                solucionCasoTipoProcedimiento= SolucionCasoTipoProcedimientos(
+
+                # crear el obejto solucion tipo procedimiento
+                solucionCasoTipoProcedimiento = SolucionCasoTipoProcedimientos(
                     solSolucionCaso=solucionCaso,
                     solTipoProcedimiento=tipoProcedimiento
                 )
                 solucionCasoTipoProcedimiento.save()
-                
-
-                
-                # enviar el correo al empleado que hizo la solicitud
-                solicitud=caso.casSolicitud
-                userEmpleado=solicitud.solUsuario
-                asunto = 'Solución Caso - CTPI-CAUCA'
+                # enviar correo al empleado que realizó la solicitud
+                solicitud = caso.casSolicitud
+                userEmpleado = solicitud.solUsuario
+                asunto = 'Solucion Caso - CTPI-CAUCA'
                 mensajeCorreo = f'Cordial saludo, <b>{userEmpleado.first_name} {userEmpleado.last_name}</b>, nos permitimos \
-                    informarle que se ha dado solución de tipo {tipoSolucion} al caso identificado con el código: \
-                    <b>{caso.casCodigo}</b>. <br><br>Lo invitamos a revisar el equipoy verificar la solución, \
-                    según los acuerdos de solución establecidos para la Mesa de Servicios del CTPI-CAUCA.\
-                    <br><br>Para consultar a detalles la solución, ingresa al sistema para verificar las solicitudes reportadas en la siguiente URL:\
-                    http://mesadeservicioctpicauca.sena.edu.co.'
-                # crear el hilo para el envío del correo
-                thread = threading.Thread(
-                    target=enviarCorreo, args=(asunto, mensajeCorreo, [userEmpleado.email]))
-                # ejecutar el hilo
-                thread.start()         
+                    informarle que se ha dado solución de tipo {tipoSolucion} al caso identificado con código:  \
+                    <b>{caso.casCodigo}</b>. Lo invitamos a revisar el equipo y verificar la solución. \
+                    <br><br>Para consultar en detalle la solución, ingresar al sistema para verificar las solicitudes \
+                    reportadas en la siguiente url: http://mesadeservicioctpicauca.sena.edu.co.'
+            # crear el hilo para el envío del correo
+            thread = threading.Thread(
+                target=enviarCorreo, args=(asunto, mensajeCorreo, [userEmpleado.email]))
+            # ejecutar el hilo
+            thread.start()
+            mensaje = "Solución  Caso"
         except Error as error:
-                transaction.rollback
-                mensaje=str(error)
-                mensaje=''
-        # retorno={"mensaje":mensaje}
-        return redirect("/listarCasosAsignadosTecnicos/")
-        
+            transaction.rollback()
+            mensaje = str(error)
+        retorno = {"mensaje": mensaje}
+        return redirect("/listarCasosAsignados/")
     else:
-        mensaje="Debes iniciar sesión"
-        return render(request, "frmIniciarSesion.html",{"mensaje":mensaje})     
+        mensaje = "Debe iniciar sesión"
+        return render(request, "frmIniciarSesion.html", {"mensaje": mensaje})
 
 
+def vistaGestionarUsuarios(request):
+    if request.user.is_authenticated:
+        usuarios = User.objects.all()
+        retorno = {"usuarios": usuarios, "user": request.user,
+                   "rol": request.user.groups.get().name}
+        return render(request, "administrador/vistaGestionarUsuarios.html", retorno)
+    else:
+        mensaje = "Debe iniciar sesión"
+        return render(request, "frmIniciarSesion.html", {"mensaje": mensaje})
+
+
+def vistaRegistrarUsuario(request):
+    if request.user.is_authenticated:
+        roles = Group.objects.all()
+        retorno = {"roles": roles, "user": request.user, 'tipoUsuario': tipoUsuario,
+                   "rol": request.user.groups.get().name}
+        return render(request, "administrador/frmRegistrarUsuario.html", retorno)
+    else:
+        mensaje = "Debe iniciar sesión"
+        return render(request, "frmIniciarSesion.html", {"mensaje": mensaje})
+
+
+def registrarUsuario(request):
+    if request.user.is_authenticated:
+        try:
+            nombres = request.POST["txtNombres"]
+            apellidos = request.POST["txtApellidos"]
+            correo = request.POST["txtCorreo"]
+            tipo = request.POST["cbTipo"]
+            foto = request.FILES.get("fileFoto")
+            idRol = int(request.POST["cbRol"])
+            with transaction.atomic():
+                # crear un objeto de tipo User
+                user = User(username=correo, first_name=nombres,
+                            last_name=apellidos, email=correo, userTipo=tipo, userFoto=foto)
+                user.save()
+                # obtener el Rol de acuerdo a id del rol
+                rol = Group.objects.get(pk=idRol)
+                # agregar el usuario a ese Rol
+                user.groups.add(rol)
+                # si rol es Administrador se habilita para que tenga acceso al sitio web del administrador
+                if (rol.name == "Administrador"):
+                    user.is_staff = True
+                # guardamos el usuario con lo que tenemos
+                user.save()
+                # llamamos a la funcion generarPassword
+                passwordGenerado = generarPassword()
+                print(f"password {passwordGenerado}")
+                # con el usuario creado llamamos a la función set_password que
+                # encripta el password y lo agrega al campo password del user.
+                user.set_password(passwordGenerado)
+                # se actualiza el user
+                user.save()
+                mensaje = "Usuario Agregado Correctamente"
+                retorno = {"mensaje": mensaje}
+                # enviar correo al usuario
+                asunto = 'Registro Sistema Mesa de Servicio CTPI-CAUCA'
+                mensaje = f'Cordial saludo, <b>{user.first_name} {user.last_name}</b>, nos permitimos \
+                    informarle que usted ha sido registrado en el Sistema de Mesa de Servicio \
+                    del Centro de Teleinformática y Producción Industrial CTPI de la ciudad de Popayán, \
+                    con el Rol: <b>{rol.name}</b>. \
+                    <br>Nos permitimos enviarle las credenciales de Ingreso a nuestro sistema.<br>\
+                    <br><b>Username: </b> {user.username}\
+                    <br><b>Password: </b> {passwordGenerado}\
+                    <br><br>Lo invitamos a utilizar el aplicativo, donde podrá usted \
+                    realizar solicitudes a la mesa de servicio del Centro. Url del aplicativo: \
+                    http://mesadeservicioctpi.sena.edu.co.'
+                thread = threading.Thread(
+                    target=enviarCorreo, args=(asunto, mensaje, [user.email]))
+                thread.start()
+                return redirect("/vistaGestionarUsuarios/", retorno)
+        except Error as error:
+            transaction.rollback()
+            mensaje = f"{error}"
+        retorno = {"mensaje": mensaje}
+        return render(request, "administrador/frmRegistrarUsuario.html", retorno)
+    else:
+        mensaje = "Debe iniciar sesión"
+        return render(request, "frmIniciarSesion.html", {"mensaje": mensaje})
+
+
+def generarPassword():
+    """
+    Genera un password de longitud de 10 que incluye letras mayusculas
+    y minusculas,digitos y cararcteres especiales
+    Returns:
+        _str_: retorna un password
+    """
+    longitud = 10
+
+    caracteres = string.ascii_lowercase + \
+        string.ascii_uppercase + string.digits + string.punctuation
+    password = ''
+
+    for i in range(longitud):
+        password += ''.join(random.choice(caracteres))
+    return password
+
+
+def recuperarClave(request):
+    try:
+        correo = request.POST['txtCorreo']
+        user = User.objects.filter(email=correo).first()
+        if (user):
+            passwordGenerado = generarPassword()
+            user.set_password(passwordGenerado)
+            user.save()
+            mensaje = "Contraseña Actualiza Correctamente y enviada al Correo Electrónico"
+            retorno = {"mensaje": mensaje}
+            # enviar correo al usuario
+            asunto = 'Recuperación de Contraseña Sistema Mesa de Servicio CTPI-CAUCA'
+            mensaje = f'Cordial saludo, <b>{user.first_name} {user.last_name}</b>, nos permitimos \
+                    informarle que se ha generado nueva contraseña para ingreso al sistema. \
+                    <br><b>Username: </b> {user.username}\
+                    <br><b>Password: </b> {passwordGenerado}\
+                    <br><br>Para comprobar ingresar al sistema haciendo uso de la nueva contraseña.'
+            thread = threading.Thread(
+                target=enviarCorreo, args=(asunto, mensaje, [user.email]))
+            thread.start()
+        else:
+            mensaje = "No existe usuario con correo ingresado. Revisar"
+            retorno = {"mensaje": mensaje}
+    except Error as error:
+        mensaje = str(error)
+
+    return render(request, 'frmIniciarSesion.html', retorno)
 
 
 def salir(request):
