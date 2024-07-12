@@ -29,7 +29,7 @@ from django.contrib.auth.models import Group
 
 # Graficos estadísticos
 from django.db.models import Count
-""" import matplotlib.pyplot as plt """
+import matplotlib.pyplot as plt 
 import os
 from django.db.models.functions import ExtractMonth
 
@@ -104,16 +104,7 @@ def vistaSolicitud(request):
 
 
 def registrarSolicitud(request):
-    """_summary_
-        Función que realiza el proceso de registrar
-        la solicitud por parte del empleado
-    Args:
-        request (_type_): objeto con la descripción, la
-        oficina y el empleado que hace la solicitud
-
-    Returns:
-        _type_: mensaje de registro o no de la solicitud
-    """
+    
     if request.user.is_authenticated:
         try:
             with transaction.atomic():
@@ -186,16 +177,7 @@ def enviarCorreo(asunto=None, mensaje=None, destinatario=None, archivo=None):
 
 
 def listarCasos(request):
-    """_summary_
-        obtiene los casos en estado solicitada
-        y los empleados técnicos para asignar a
-        los casos.
-    Args:
-        request (_type_): _description_
-
-    Returns:
-        _type_: Lista de los casos y de los empleados técnicos
-    """
+    
     if request.user.is_authenticated:
         try:
             mensaje = ""
@@ -457,6 +439,51 @@ def recuperarClave(request):
         mensaje = str(error)
 
     return render(request, 'frmIniciarSesion.html', retorno)
+
+
+
+
+
+def generarGrafica(request):
+    try:
+        
+        solicitudes = Solicitud.objects.annotate(month=ExtractMonth('fechaHoraCreacion'))\
+            .values('month')\
+            .annotate(cantidad=Count('id'))\
+            .values('month', 'cantidad')
+        
+       
+        meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre", "Diciembre"]
+        cantidades = []
+
+      
+        for s in solicitudes:
+            meses.append(s['month'])
+            cantidades.append(s['cantidad'])
+
+      
+        plt.figure(figsize=(10, 5))
+        plt.title("Cantidad de Solicitudes por Mes")
+        plt.xlabel("Mes")
+        plt.ylabel("Cantidad")
+        
+        
+        plt.bar(meses, cantidades)
+        
+        
+        rutaImagen = os.path.join(settings.MEDIA_ROOT, "grafica_solicitudes.png")
+        
+        
+        plt.savefig(rutaImagen)
+        
+    
+        return render(request, "graficaPython.html")
+    
+    except Exception as error:
+        mensaje = f"{error}"
+        
+        return render(request, "graficaPython.html", {"error": mensaje})
+
 
 
 
