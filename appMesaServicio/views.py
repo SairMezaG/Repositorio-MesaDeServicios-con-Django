@@ -444,7 +444,7 @@ def recuperarClave(request):
 
 
 
-def generarGrafica(request):
+""" def generarGrafica(request):
     try:
         
         solicitudes = Solicitud.objects.annotate(month=ExtractMonth('fechaHoraCreacion'))\
@@ -453,7 +453,7 @@ def generarGrafica(request):
             .values('month', 'cantidad')
         
        
-        """ meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre", "Diciembre"] """
+        
         meses = []
         cantidades = []
 
@@ -486,8 +486,46 @@ def generarGrafica(request):
         return render(request, "administrador/graficaPython.html", {"error": mensaje})
 
 
+ """
 
 
+
+def generarGrafica(request):
+    try:
+        solicitudes = Solicitud.objects.annotate(month=ExtractMonth('fechaHoraCreacion'))\
+            .values('month')\
+            .annotate(cantidad=Count('id'))\
+            .values('month', 'cantidad')
+
+        meses_numeros = []
+        cantidades = []
+
+        for s in solicitudes:
+            meses_numeros.append(s['month'])
+            cantidades.append(s['cantidad'])
+
+        # Lista de nombres de meses
+        nombres_meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
+        # Convertir los números de los meses en nombres
+        meses = [nombres_meses[numero - 1] for numero in meses_numeros]
+
+        plt.figure(figsize=(10, 5))
+        plt.title("Cantidad de Solicitudes por Mes")
+        plt.xlabel("Mes")
+        plt.ylabel("Cantidad")
+
+        plt.bar(meses, cantidades)
+
+        rutaImagen = os.path.join(settings.MEDIA_ROOT, "grafica_solicitudes.png")
+
+        plt.savefig(rutaImagen)
+
+        return render(request, "administrador/graficaPython.html")
+
+    except Exception as error:
+        mensaje = f"{error}"
+        return render(request, "administrador/graficaPython.html", {"error": mensaje})
 
     
                         
