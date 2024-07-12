@@ -453,7 +453,8 @@ def generarGrafica(request):
             .values('month', 'cantidad')
         
        
-        meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre", "Diciembre"]
+        """ meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre", "Diciembre"] """
+        meses = []
         cantidades = []
 
       
@@ -477,12 +478,12 @@ def generarGrafica(request):
         plt.savefig(rutaImagen)
         
     
-        return render(request, "graficaPython.html")
+        return render(request, "administrador/graficaPython.html")
     
     except Exception as error:
         mensaje = f"{error}"
         
-        return render(request, "graficaPython.html", {"error": mensaje})
+        return render(request, "administrador/graficaPython.html", {"error": mensaje})
 
 
 
