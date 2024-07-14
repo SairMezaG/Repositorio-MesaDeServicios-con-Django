@@ -21,6 +21,7 @@ urlpatterns = [
     path('registrarUsuario/', views.registrarUsuario),
     path('recuperarClave/', views.recuperarClave),
     path('generarGrafica/', views.generarGrafica),
+    path('pdfSolicitudes/', views.generarPdfSolicitudes),
     path('salir/', views.salir),
 
 ]

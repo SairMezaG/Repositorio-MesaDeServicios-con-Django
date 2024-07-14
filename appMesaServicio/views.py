@@ -444,52 +444,6 @@ def recuperarClave(request):
 
 
 
-""" def generarGrafica(request):
-    try:
-        
-        solicitudes = Solicitud.objects.annotate(month=ExtractMonth('fechaHoraCreacion'))\
-            .values('month')\
-            .annotate(cantidad=Count('id'))\
-            .values('month', 'cantidad')
-        
-       
-        
-        meses = []
-        cantidades = []
-
-      
-        for s in solicitudes:
-            meses.append(s['month'])
-            cantidades.append(s['cantidad'])
-
-      
-        plt.figure(figsize=(10, 5))
-        plt.title("Cantidad de Solicitudes por Mes")
-        plt.xlabel("Mes")
-        plt.ylabel("Cantidad")
-        
-        
-        plt.bar(meses, cantidades)
-        
-        
-        rutaImagen = os.path.join(settings.MEDIA_ROOT, "grafica_solicitudes.png")
-        
-        
-        plt.savefig(rutaImagen)
-        
-    
-        return render(request, "administrador/graficaPython.html")
-    
-    except Exception as error:
-        mensaje = f"{error}"
-        
-        return render(request, "administrador/graficaPython.html", {"error": mensaje})
-
-
- """
-
-
-
 def generarGrafica(request):
     try:
         solicitudes = Solicitud.objects.annotate(month=ExtractMonth('fechaHoraCreacion'))\
@@ -507,7 +461,7 @@ def generarGrafica(request):
         # Lista de nombres de meses
         nombres_meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
-        # Convertir los números de los meses en nombres
+        
         meses = [nombres_meses[numero - 1] for numero in meses_numeros]
 
         plt.figure(figsize=(10, 5))
@@ -526,10 +480,34 @@ def generarGrafica(request):
     except Exception as error:
         mensaje = f"{error}"
         return render(request, "administrador/graficaPython.html", {"error": mensaje})
-
     
-                        
-                   
+
+
+
+
+
+def generarPdfSolicitudes(request):
+    from appMesaServicio.pdfSolicitudes import PdF
+    solicitudes= Solicitud.objects.all()
+    
+    # creado en el archivo pdfSolicitudes.py
+    doc= PdF()
+    # Permite colocar el numero de paginas en el pdf
+    doc.alias_nb_pages()
+    # Permite agregar nuevas paginas
+    doc.add_page()
+    
+    # se pasan las solicitudes como argumento
+    doc.mostrarDatos(solicitudes)
+    
+    # generar el archivo Pdf en la carpeta media
+    doc.output(f'media/solicitudes.pdf')
+    
+    return render(request, "administrador/mostrarPdf.html")
+    
+
+
+
         
 
 def salir(request):
