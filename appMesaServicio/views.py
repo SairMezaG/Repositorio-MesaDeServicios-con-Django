@@ -444,7 +444,7 @@ def recuperarClave(request):
 
 
 
-def generarGrafica(request):
+def generarGraficaPorMes(request):
     try:
         solicitudes = Solicitud.objects.annotate(month=ExtractMonth('fechaHoraCreacion'))\
             .values('month')\
@@ -513,11 +513,16 @@ def generarGrafica(request):
         plt.savefig(rutaImagen)
         plt.close()
 
-        return render(request, "administrador/graficaPython.html")
+        return render(request, "administrador/graficaOficina.html")
 
     except Exception as error:
         mensaje = f"{error}"
-        return render(request, "administrador/graficaPython.html", {"error": mensaje}) """
+        return render(request, "administrador/graficaOficina.html", {"error": mensaje})  """
+
+
+
+
+
 
 
 
