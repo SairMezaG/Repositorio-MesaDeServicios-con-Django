@@ -461,7 +461,6 @@ def generarGrafica(request):
         # Lista de nombres de meses
         nombres_meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
-        
         meses = [nombres_meses[numero - 1] for numero in meses_numeros]
 
         plt.figure(figsize=(10, 5))
@@ -471,8 +470,11 @@ def generarGrafica(request):
 
         plt.bar(meses, cantidades)
 
-        rutaImagen = os.path.join(settings.MEDIA_ROOT, "grafica_solicitudes.png")
+        # Configurar el eje y para mostrar solo enteros únicos
+        max_valor_y = max(cantidades)  # Obtener el máximo valor en el eje y
+        plt.yticks(range(0, max_valor_y + 1))  # Establecer los ticks del eje y de 0 a max_valor_y
 
+        rutaImagen = os.path.join(settings.MEDIA_ROOT, "graficaSolicitudesPorMeses.png")
         plt.savefig(rutaImagen)
 
         return render(request, "administrador/graficaPython.html")
@@ -482,6 +484,40 @@ def generarGrafica(request):
         return render(request, "administrador/graficaPython.html", {"error": mensaje})
     
 
+
+
+""" def generarGraficaPorOficina(request):
+    try:
+        # Obtener las solicitudes agrupadas por oficina
+        solicitudes = Solicitud.objects.values('solOficinaAmbiente__ofiNombre')\
+            .annotate(cantidad=Count('id'))
+
+        oficinas = []
+        cantidades = []
+
+        for s in solicitudes:
+            oficinas.append(s['solOficinaAmbiente__ofiNombre'])
+            cantidades.append(s['cantidad'])
+
+        # Generar una paleta de colores única para cada oficina
+        colores = plt.cm.get_cmap('tab20', len(oficinas))  # Usar una paleta de colores tab20
+
+        plt.figure(figsize=(8, 8))
+        plt.title("Cantidad de Solicitudes por Ambiente u Oficina")
+
+        # Graficar la gráfica de pastel con colores diferentes para cada oficina
+        plt.pie(cantidades, labels=oficinas, autopct='%1.1f%%', colors=colores(range(len(oficinas))), startangle=140)
+
+        rutaImagen = os.path.join(settings.MEDIA_ROOT, "graficaOficinaAmbiente.png")
+        plt.tight_layout()
+        plt.savefig(rutaImagen)
+        plt.close()
+
+        return render(request, "administrador/graficaPython.html")
+
+    except Exception as error:
+        mensaje = f"{error}"
+        return render(request, "administrador/graficaPython.html", {"error": mensaje}) """
 
 
 
