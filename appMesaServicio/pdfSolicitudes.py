@@ -5,7 +5,7 @@ from datetime import datetime
 class PdF(FPDF):
     def header(self):
         # logo
-        self.image("logo-sena-naranja-png-2022.png", 10, 8, 33)
+        self.image("media/fotos/logoSena.jpg", 10, 8, 33)
         self.set_font("Arial","B",15)
         self.ln()
         # moverse a la derecha
@@ -21,7 +21,7 @@ class PdF(FPDF):
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial','I',8)
-        self.cell(0,10,'page'+ str(self.page_no() + '/{nb}',0,0,'C'))
+        self.cell(0,10,'page'+ str(self.page_no()) + '/{nb}',0,0,'C')
         
     def mostrarDatos(self, solicitudes):
         self.cell(30,10,"Fecha: ")

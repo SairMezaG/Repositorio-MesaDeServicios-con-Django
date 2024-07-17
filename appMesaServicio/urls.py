@@ -19,7 +19,10 @@ urlpatterns = [
     path('vistaRegistrarUsuario/', views.vistaRegistrarUsuario),
     path('registrarUsuario/', views.registrarUsuario),
     path('recuperarClave/', views.recuperarClave),
-    path('generarGraficaPorMes/', views.generarGraficaPorMes),
+    path('generarGrafica/', views.generarGrafica),
+    path('generarGraficaPorOficina/', views.generarGraficaPorOficina),
+
+    
    
     path('pdfSolicitudes/', views.generarPdfSolicitudes),
     path('salir/', views.salir),
