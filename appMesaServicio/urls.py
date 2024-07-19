@@ -19,7 +19,7 @@ urlpatterns = [
     path('vistaRegistrarUsuario/', views.vistaRegistrarUsuario),
     path('registrarUsuario/', views.registrarUsuario),
     path('recuperarClave/', views.recuperarClave),
-    path('generarGrafica/', views.generarGrafica),
+    path('generarGraficaPorMes/', views.generarGraficaPorMes),
     path('generarGraficaPorOficina/', views.generarGraficaPorOficina),
 
     
