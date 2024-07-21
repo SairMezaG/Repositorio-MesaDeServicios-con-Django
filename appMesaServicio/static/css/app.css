@@ -2,6 +2,7 @@
 
 body {
     font-family: 'Roboto', sans-serif;
+   
 }
 
 header {
@@ -45,3 +46,20 @@ select{
     width: 50px;
 
 }
+
+.solicitudes{
+ background-color:  rgb(57, 169, 0);
+ color:black;
+ border: solid 2px black;
+ border-radius: 7px;
+ 
+}
+
+
+
+
+
+a{
+    text-decoration: none;
+}
+
